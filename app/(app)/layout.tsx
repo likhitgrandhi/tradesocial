@@ -12,7 +12,7 @@ export default function AppLayout({
 
       {/* Content area — padded for fixed nav on desktop and mobile top/bottom bars */}
       <main
-        className="mx-auto max-w-2xl px-4 md:px-6 pt-[3.5rem] md:pt-28 pb-24 md:pb-12"
+        className="mx-auto max-w-2xl px-4 md:px-6 pt-6 md:pt-8 pb-24 md:pb-12"
         id="main-content"
       >
         {children}
