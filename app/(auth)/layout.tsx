@@ -6,20 +6,19 @@ export default function AuthLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-svh bg-[#F3F0EE] dark:bg-[#141413] flex flex-col">
-      {/* Minimal auth header — just the logo */}
-      <header className="p-6 md:p-8">
+    <div className="min-h-svh bg-surface-base flex flex-col">
+      {/* Minimal auth header */}
+      <header className="flex h-16 items-center px-6 md:px-8 border-b border-border-default">
         <NavLogo href="/" />
       </header>
 
-      {/* Centered form area */}
-      <main className="flex-1 flex items-center justify-center px-4 pb-12">
+      {/* Centered content */}
+      <main className="flex-1 flex items-center justify-center px-4 py-12">
         {children}
       </main>
 
-      {/* Footer note */}
-      <footer className="p-6 text-center">
-        <p className="text-[12px] text-[#696969] dark:text-[#F3F0EE]/30">
+      <footer className="py-6 text-center">
+        <p className="text-xs text-content-disabled">
           © {new Date().getFullYear()} TradeSocial. All rights reserved.
         </p>
       </footer>

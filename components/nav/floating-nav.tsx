@@ -18,14 +18,14 @@ export function FloatingNav() {
 
   return (
     <>
-      {/* ── Desktop: floating pill nav ─────────────────────────────── */}
-      <header className="fixed top-6 inset-x-0 z-50 px-6 hidden md:flex justify-center pointer-events-none">
-        <nav className="pointer-events-auto flex items-center gap-6 bg-white dark:bg-[#1e1c1a] rounded-[999px] px-6 py-3 shadow-[0_4px_24px_0_rgba(0,0,0,0.06)] max-w-3xl w-full border border-[#F3F0EE] dark:border-white/8">
+      {/* ── Desktop: sticky top bar (64px, flat) ───────────────────── */}
+      <header className="sticky top-0 z-50 hidden md:flex h-16 w-full bg-surface-base border-b border-border-default">
+        <div className="mx-auto grid grid-cols-[auto_1fr_auto] items-center w-full max-w-[1280px] px-8 gap-8">
           {/* Logo */}
           <NavLogo />
 
-          {/* Center links */}
-          <div className="flex-1 flex items-center justify-center gap-1">
+          {/* Center nav links */}
+          <nav className="flex flex-1 items-center justify-center gap-1">
             {NAV_LINKS.map((link) => {
               const isActive = pathname.startsWith(link.href)
               return (
@@ -33,64 +33,71 @@ export function FloatingNav() {
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    "px-4 py-1.5 text-[14px] font-medium tracking-tight rounded-full transition-all",
+                    "px-4 py-2 rounded-md text-sm transition-colors",
                     isActive
-                      ? "bg-[#F3F0EE] dark:bg-white/10 text-[#141413] dark:text-[#F3F0EE]"
-                      : "text-[#141413]/50 dark:text-[#F3F0EE]/40 hover:text-[#141413] dark:hover:text-[#F3F0EE] hover:bg-[#F3F0EE]/60 dark:hover:bg-white/6"
+                      ? "text-action-primary bg-surface-accent-subtle"
+                      : "text-content-muted hover:text-content-primary hover:bg-surface-raised"
                   )}
+                  style={{ fontWeight: isActive ? "var(--font-weight-medium)" : "var(--font-weight-regular)" }}
                 >
                   {link.label}
                 </Link>
               )
             })}
-          </div>
+          </nav>
 
           {/* Right actions */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* Primary CTA */}
             <Link
               href="/log-trade"
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#141413] dark:bg-[#F3F0EE] text-[#F3F0EE] dark:text-[#141413] text-[13px] font-medium tracking-tight hover:opacity-90 transition-opacity"
+              className="flex items-center gap-1.5 h-10 px-4 rounded-md border border-border-default bg-surface-raised text-content-primary text-sm hover:bg-surface-muted transition-colors"
+              style={{ fontWeight: "var(--font-weight-medium)" }}
             >
               <TrendingUp className="w-3.5 h-3.5" />
               Log Trade
             </Link>
+
             <button
-              className="w-9 h-9 flex items-center justify-center rounded-full text-[#141413]/50 dark:text-[#F3F0EE]/40 hover:bg-[#F3F0EE] dark:hover:bg-white/8 hover:text-[#141413] dark:hover:text-[#F3F0EE] transition-all"
+              className="w-9 h-9 flex items-center justify-center rounded-md text-content-muted hover:text-content-primary hover:bg-surface-raised transition-colors"
               aria-label="Search"
             >
               <Search className="w-4 h-4" />
             </button>
             <button
-              className="w-9 h-9 flex items-center justify-center rounded-full text-[#141413]/50 dark:text-[#F3F0EE]/40 hover:bg-[#F3F0EE] dark:hover:bg-white/8 hover:text-[#141413] dark:hover:text-[#F3F0EE] transition-all"
+              className="w-9 h-9 flex items-center justify-center rounded-md text-content-muted hover:text-content-primary hover:bg-surface-raised transition-colors"
               aria-label="Notifications"
             >
               <Bell className="w-4 h-4" />
             </button>
-            {/* Avatar — auth stub, replaced by Clerk in Phase 1 auth task */}
-            <div className="w-8 h-8 rounded-full bg-[#141413] dark:bg-[#F3F0EE] flex items-center justify-center text-[#F3F0EE] dark:text-[#141413] text-[11px] font-semibold cursor-pointer hover:opacity-85 transition-opacity">
+
+            {/* Avatar stub — replaced by Clerk in TRA-8 */}
+            <div className="w-8 h-8 rounded-full bg-surface-accent-subtle flex items-center justify-center text-action-primary text-[11px] cursor-pointer transition-colors"
+              style={{ fontWeight: "var(--font-weight-bold)" }}>
               TS
             </div>
           </div>
-        </nav>
+        </div>
       </header>
 
-      {/* ── Mobile: compact top bar ──────────────────────────────────── */}
-      <header className="fixed top-0 inset-x-0 z-50 flex md:hidden items-center justify-between px-4 h-14 bg-[#F3F0EE]/90 dark:bg-[#141413]/90 backdrop-blur-md border-b border-[#D1CDC7]/40 dark:border-white/8">
+      {/* ── Mobile: compact top bar (64px, flat) ───────────────────── */}
+      <header className="sticky top-0 z-50 flex md:hidden h-16 w-full items-center justify-between px-4 bg-surface-base border-b border-border-default">
         <NavLogo />
         <div className="flex items-center gap-1">
           <button
-            className="w-9 h-9 flex items-center justify-center rounded-full text-[#141413]/60 dark:text-[#F3F0EE]/50 hover:bg-[#141413]/6 dark:hover:bg-white/8 transition-all"
+            className="w-9 h-9 flex items-center justify-center rounded-md text-content-muted hover:text-content-primary hover:bg-surface-raised transition-colors"
             aria-label="Search"
           >
             <Search className="w-4 h-4" />
           </button>
           <button
-            className="w-9 h-9 flex items-center justify-center rounded-full text-[#141413]/60 dark:text-[#F3F0EE]/50 hover:bg-[#141413]/6 dark:hover:bg-white/8 transition-all"
+            className="w-9 h-9 flex items-center justify-center rounded-md text-content-muted hover:text-content-primary hover:bg-surface-raised transition-colors"
             aria-label="Notifications"
           >
             <Bell className="w-4 h-4" />
           </button>
-          <div className="w-7 h-7 rounded-full bg-[#141413] dark:bg-[#F3F0EE] flex items-center justify-center text-[#F3F0EE] dark:text-[#141413] text-[10px] font-semibold cursor-pointer ml-1">
+          <div className="w-8 h-8 rounded-full bg-action-primary flex items-center justify-center text-content-inverse text-[10px] cursor-pointer ml-1"
+            style={{ fontWeight: "var(--font-weight-bold)" }}>
             TS
           </div>
         </div>

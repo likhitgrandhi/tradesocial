@@ -19,7 +19,7 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 inset-x-0 z-50 md:hidden bg-white/95 dark:bg-[#1e1c1a]/95 backdrop-blur-md border-t border-[#D1CDC7]/40 dark:border-white/8 safe-area-pb"
+      className="fixed bottom-0 inset-x-0 z-50 md:hidden bg-surface-base border-t border-border-default"
       aria-label="Main navigation"
     >
       <div className="flex items-center justify-around h-16 px-2">
@@ -36,14 +36,12 @@ export function MobileBottomNav() {
                 key={tab.href}
                 href={tab.href}
                 aria-label={tab.label}
-                className="flex flex-col items-center gap-1 -mt-5"
+                className="flex flex-col items-center gap-1 -mt-4"
               >
-                <span className="w-12 h-12 flex items-center justify-center rounded-full bg-[#141413] dark:bg-[#F3F0EE] text-[#F3F0EE] dark:text-[#141413] shadow-[0_4px_20px_0_rgba(0,0,0,0.18)] hover:opacity-90 transition-opacity">
+                <span className="w-12 h-12 flex items-center justify-center rounded-full bg-action-primary text-content-inverse hover:bg-action-primary-hover transition-colors">
                   <Icon className="w-5 h-5" />
                 </span>
-                <span className="text-[10px] font-medium text-[#696969] dark:text-[#F3F0EE]/40">
-                  Log
-                </span>
+                <span className="text-[10px] text-content-muted">Log</span>
               </Link>
             )
           }
@@ -53,10 +51,10 @@ export function MobileBottomNav() {
               key={tab.href}
               href={tab.href}
               className={cn(
-                "flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-colors min-w-[52px]",
+                "flex flex-col items-center gap-1 px-3 py-2 rounded-md transition-colors min-w-[52px]",
                 isActive
-                  ? "text-[#141413] dark:text-[#F3F0EE]"
-                  : "text-[#696969] dark:text-[#F3F0EE]/40 hover:text-[#141413] dark:hover:text-[#F3F0EE]"
+                  ? "text-action-primary"
+                  : "text-content-muted hover:text-content-primary"
               )}
             >
               <Icon
@@ -65,7 +63,9 @@ export function MobileBottomNav() {
                   isActive && "stroke-[2.2px]"
                 )}
               />
-              <span className="text-[10px] font-medium">{tab.label}</span>
+              <span className="text-[10px]" style={{ fontWeight: "var(--font-weight-medium)" }}>
+                {tab.label}
+              </span>
             </Link>
           )
         })}

@@ -1,17 +1,19 @@
 import type { Metadata } from "next"
-import { Figtree, Geist_Mono } from "next/font/google"
+import { Inter, Geist_Mono } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
 
-const figtree = Figtree({
+// Inter Variable — supports fractional weights (435, 535, 660) per DESIGN.md
+const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
 })
 
+// Geist Mono — secondary / monospace (Soehne substitute)
 const fontMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
@@ -36,7 +38,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn(figtree.variable, fontMono.variable)}
+      className={cn(inter.variable, fontMono.variable)}
     >
       <body className="font-sans antialiased">
         <ThemeProvider>
