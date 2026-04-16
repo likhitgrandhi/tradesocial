@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr"
 // Routes that don't require authentication
 const PUBLIC_PREFIXES = ["/login", "/signup", "/auth", "/terms", "/privacy", "/onboarding"]
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   // Create a Supabase client that can read/write cookies via the response
