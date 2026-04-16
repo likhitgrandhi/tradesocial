@@ -2,10 +2,12 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { ArrowRight, ArrowLeft, Mail } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ArrowRight, ArrowLeft } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
+import { OtpInput } from "@/components/auth/otp-input"
 
 // Signup uses the same Supabase OTP flow as login.
 // Supabase creates a new user if the email doesn't exist (shouldCreateUser: true).
@@ -25,6 +27,7 @@ function validateOtp(otp: string): string | undefined {
 }
 
 export default function SignupPage() {
+  const router = useRouter()
   const [step, setStep] = useState<Step>("email")
   const [email, setEmail] = useState("")
   const [otp, setOtp] = useState("")
@@ -70,8 +73,9 @@ export default function SignupPage() {
 
     if (error) {
       setServerError(error.message)
+    } else {
+      router.push("/feed")
     }
-    // On success, middleware handles redirect (new user → /onboarding)
   }
 
   async function handleGoogleSignIn() {
@@ -160,30 +164,27 @@ export default function SignupPage() {
           <form onSubmit={handleOtpSubmit} noValidate className="p-5 space-y-4">
             <ErrorBanner message={serverError} />
 
-            {/* Email icon hint */}
-            <div className="flex justify-center py-2">
-              <div className="w-12 h-12 rounded-[var(--radius-xl)] bg-surface-accent-subtle flex items-center justify-center">
-                <Mail className="w-5 h-5 text-action-primary" />
-              </div>
-            </div>
+            <p className="text-content-primary" style={{ fontSize: "var(--font-size-14)", fontWeight: "var(--font-weight-medium)" }}>
+              Verification code
+            </p>
 
-            <FormField label="Verification code" htmlFor="otp" error={errors.otp}>
-              <input
-                id="otp" name="otp" type="text" inputMode="numeric"
-                autoComplete="one-time-code" maxLength={6}
-                placeholder="123456"
+            <div className="space-y-1.5">
+              <label className="sr-only">Verification code</label>
+              <OtpInput
                 value={otp}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, "").slice(0, 6)
+                hasError={!!errors.otp}
+                onChange={(val) => {
                   setOtp(val)
                   if (errors.otp) setErrors({})
                   if (serverError) setServerError("")
                 }}
-                aria-invalid={!!errors.otp}
-                className={cn(inputBase, "text-center tracking-wide", errors.otp && inputErrorCls)}
-                style={{ fontSize: "var(--font-size-18)", letterSpacing: "0.2em" }}
               />
-            </FormField>
+              {errors.otp && (
+                <p className="text-loss" role="alert" style={{ fontSize: "var(--font-size-12)", fontWeight: "var(--font-weight-medium)" }}>
+                  {errors.otp}
+                </p>
+              )}
+            </div>
 
             <button
               type="submit" disabled={loading || otp.length < 6}

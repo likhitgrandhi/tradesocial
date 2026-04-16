@@ -26,8 +26,9 @@ export async function GET(request: Request) {
           .single()
 
         // New user: profile exists (created by trigger) but onboarding not done
-        if (!profile?.onboarding_completed) {
-          return NextResponse.redirect(`${origin}/onboarding`)
+        // TODO: redirect to /onboarding once that page is built
+        if (profile?.onboarding_completed === false) {
+          return NextResponse.redirect(`${origin}/feed`)
         }
       }
 
