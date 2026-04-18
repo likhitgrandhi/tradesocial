@@ -2,8 +2,6 @@ import { NextResponse, type NextRequest } from "next/server"
 import { unsealData } from "iron-session"
 import type { SessionData } from "@/lib/session"
 
-export const runtime = "nodejs"
-
 const SESSION_COOKIE = process.env.SESSION_COOKIE_NAME ?? "ts_session"
 const SESSION_SECRET = process.env.SESSION_SECRET ?? ""
 
