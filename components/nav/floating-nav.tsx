@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { Bell, Search, TrendingUp } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { NavLogo } from "./nav-logo"
-import { createClient } from "@/lib/supabase/client"
+import { useAuth } from "@/hooks/use-auth"
+import { useSession } from "@hawcx/react"
 
 const NAV_LINKS = [
   { href: "/feed", label: "Feed" },
@@ -22,18 +23,11 @@ function getEmailInitials(email: string | undefined): string {
 
 export function FloatingNav() {
   const pathname = usePathname()
-  const router = useRouter()
-  const [email, setEmail] = useState<string | undefined>()
+  const { email, logout } = useAuth()
+  const { actions: hawcxActions } = useSession()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const desktopDropdownRef = useRef<HTMLDivElement>(null)
   const mobileDropdownRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
-      setEmail(data.user?.email)
-    })
-  }, [])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -50,9 +44,9 @@ export function FloatingNav() {
 
   async function handleLogout() {
     setDropdownOpen(false)
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push("/login")
+    hawcxActions.signOut()
+    sessionStorage.removeItem("hawcx_pending_email")
+    await logout()
   }
 
   const initials = getEmailInitials(email)

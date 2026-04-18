@@ -4,6 +4,7 @@ import { Inter, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { HawcxAuthProvider } from "@/providers/hawcx-provider"
 import { cn } from "@/lib/utils"
 
 // Inter Variable — supports fractional weights (435, 535, 660) per DESIGN.md
@@ -42,8 +43,10 @@ export default function RootLayout({
     >
       <body className="font-sans antialiased">
         <ThemeProvider>
-          {children}
-          <ThemeToggle />
+          <HawcxAuthProvider>
+            {children}
+            <ThemeToggle />
+          </HawcxAuthProvider>
         </ThemeProvider>
       </body>
     </html>
