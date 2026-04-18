@@ -6,9 +6,12 @@ export interface SessionData {
   email: string
 }
 
+const secret = process.env.SESSION_SECRET
+if (!secret) throw new Error("SESSION_SECRET env var is not set")
+
 export const sessionOptions = {
   cookieName: process.env.SESSION_COOKIE_NAME ?? "ts_session",
-  password: process.env.SESSION_SECRET ?? "",
+  password: secret,
   cookieOptions: {
     secure: process.env.NODE_ENV === "production",
     maxAge: 60 * 60 * 24 * 30,
