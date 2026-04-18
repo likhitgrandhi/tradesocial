@@ -1,85 +1,94 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowRight, ArrowLeft } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { createClient } from "@/lib/supabase/client"
 import { OtpInput } from "@/components/auth/otp-input"
-
-type Step = "email" | "otp"
-type FieldErrors = { email?: string; otp?: string }
-
-function validateEmail(email: string): string | undefined {
-  if (!email) return "Email is required."
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Enter a valid email address."
-}
-
-function validateOtp(otp: string): string | undefined {
-  if (!otp) return "Enter the code from your email."
-  if (!/^\d{6}$/.test(otp)) return "Code must be 6 digits."
-}
+import {
+  useAuthState,
+  useAuthFlags,
+  useAuthClient,
+  useIdentifierForm,
+  useOtpForm,
+  isAuthStep,
+  isEnterCodeStep,
+  isError as isErrorState,
+} from "@hawcx/react"
 
 export default function LoginPage() {
   const router = useRouter()
-  const [step, setStep] = useState<Step>("email")
-  const [email, setEmail] = useState("")
-  const [otp, setOtp] = useState("")
-  const [errors, setErrors] = useState<FieldErrors>({})
-  const [loading, setLoading] = useState(false)
-  const [serverError, setServerError] = useState("")
+  const state = useAuthState()
+  const flags = useAuthFlags()
+  const client = useAuthClient()
+
+  const {
+    identifier: email,
+    setIdentifier: setEmail,
+    isSubmitting: emailSubmitting,
+    submit: submitEmail,
+  } = useIdentifierForm({ flowType: "signin" })
+
+  const {
+    code,
+    setCode,
+    isSubmitting: otpSubmitting,
+    submit: submitOtp,
+    resend,
+    destination,
+  } = useOtpForm()
+
+  // When Hawcx auth completes, exchange authCode for an iron-session cookie.
+  // Email is read from sessionStorage because Hawcx may complete via a page
+  // redirect (POST back), which remounts React and clears form state.
+  useEffect(() => {
+    if (!flags.isCompleted) return
+
+    // Read directly from the client to get codeVerifier — avoids React closure stale value
+    const completion = client.getCompletion()
+    const resolvedEmail = email || sessionStorage.getItem("hawcx_pending_email") || ""
+    sessionStorage.removeItem("hawcx_pending_email")
+
+    fetch("/api/auth/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        authCode: completion?.authCode,
+        codeVerifier: completion?.codeVerifier,
+        email: resolvedEmail,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.ok) {
+          router.push(data.isNewUser ? "/onboarding" : "/feed")
+        }
+      })
+  }, [flags.isCompleted]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const isOtpStep = isAuthStep(state) && isEnterCodeStep(state.step)
+  const errorMessage = isErrorState(state) ? state.error.message : undefined
+  const loading = emailSubmitting || otpSubmitting || (flags.isCompleted && !flags.isError)
 
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const err = validateEmail(email)
-    if (err) { setErrors({ email: err }); return }
-
-    setLoading(true)
-    setServerError("")
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: true },
-    })
-    setLoading(false)
-
-    if (error) {
-      setServerError(error.message)
-    } else {
-      setStep("otp")
+    sessionStorage.setItem("hawcx_pending_email", email)
+    try {
+      await submitEmail()
+    } catch (err) {
+      console.error("Hawcx initiateLogin error:", err)
     }
   }
 
   async function handleOtpSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const err = validateOtp(otp)
-    if (err) { setErrors({ otp: err }); return }
-
-    setLoading(true)
-    setServerError("")
-    const supabase = createClient()
-    const { error } = await supabase.auth.verifyOtp({
-      email,
-      token: otp,
-      type: "email",
-    })
-    setLoading(false)
-
-    if (error) {
-      setServerError(error.message)
-    } else {
-      router.push("/feed")
+    try {
+      await submitOtp()
+    } catch (err) {
+      console.error("Hawcx verifyOtp error:", err)
     }
-  }
-
-  async function handleGoogleSignIn() {
-    const supabase = createClient()
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    })
   }
 
   return (
@@ -87,71 +96,44 @@ export default function LoginPage() {
       {/* Heading */}
       <div>
         <h1 className="text-content-secondary" style={{ fontSize: "var(--font-size-24)", fontWeight: "var(--font-weight-medium)", lineHeight: "32px" }}>
-          {step === "email" ? "Welcome back" : "Check your email"}
+          {!isOtpStep ? "Welcome back" : "Check your email"}
         </h1>
         <p className="text-content-muted mt-1" style={{ fontSize: "var(--font-size-14)" }}>
-          {step === "email"
+          {!isOtpStep
             ? "Log in to your TradeSocial account"
-            : `We sent a 6-digit code to ${email}`}
+            : `We sent a 6-digit code to ${destination || email}`}
         </p>
       </div>
 
       {/* Card */}
       <div className="rounded-[var(--radius-xl)] bg-surface-raised border border-border-default overflow-hidden">
-        {step === "email" ? (
-          <>
-            {/* Google OAuth */}
-            <div className="p-5 border-b border-border-default">
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                className="w-full h-10 rounded-[var(--radius-md)] flex items-center justify-center gap-2.5 border border-border-default bg-surface-base hover:bg-surface-raised transition-colors text-content-primary"
-                style={{ fontSize: "var(--font-size-14)", fontWeight: "var(--font-weight-medium)" }}
-              >
-                <GoogleIcon />
-                Continue with Google
-              </button>
-            </div>
+        {!isOtpStep ? (
+          /* Email step */
+          <form onSubmit={handleEmailSubmit} noValidate className="p-5 space-y-4">
+            {flags.isError && <ErrorBanner message={errorMessage ?? "Something went wrong"} />}
 
-            {/* Divider */}
-            <div className="flex items-center gap-3 px-5 py-4">
-              <div className="flex-1 h-px bg-border-default" />
-              <span className="text-content-disabled uppercase tracking-wide" style={{ fontSize: "var(--font-size-12)", fontWeight: "var(--font-weight-medium)" }}>or</span>
-              <div className="flex-1 h-px bg-border-default" />
-            </div>
+            <FormField label="Email" htmlFor="email">
+              <input
+                id="email" name="email" type="email" autoComplete="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={inputBase}
+              />
+            </FormField>
 
-            {/* Email form */}
-            <form onSubmit={handleEmailSubmit} noValidate className="px-5 pb-5 space-y-4">
-              <ErrorBanner message={serverError} />
-
-              <FormField label="Email" htmlFor="email" error={errors.email}>
-                <input
-                  id="email" name="email" type="email" autoComplete="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value)
-                    if (errors.email) setErrors({})
-                    if (serverError) setServerError("")
-                  }}
-                  aria-invalid={!!errors.email}
-                  className={cn(inputBase, errors.email && inputErrorCls)}
-                />
-              </FormField>
-
-              <button
-                type="submit" disabled={loading}
-                className="w-full h-10 rounded-[var(--radius-md)] flex items-center justify-center gap-2 bg-action-primary text-content-inverse hover:bg-action-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ fontSize: "var(--font-size-14)", fontWeight: "var(--font-weight-medium)" }}
-              >
-                {loading ? <><Spinner /> Sending code…</> : <>Continue with email <ArrowRight className="w-4 h-4" /></>}
-              </button>
-            </form>
-          </>
+            <button
+              type="submit" disabled={loading || !email}
+              className="w-full h-10 rounded-[var(--radius-md)] flex items-center justify-center gap-2 bg-action-primary text-content-inverse hover:bg-action-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ fontSize: "var(--font-size-14)", fontWeight: "var(--font-weight-medium)" }}
+            >
+              {loading ? <><Spinner /> Sending code…</> : <>Continue with email <ArrowRight className="w-4 h-4" /></>}
+            </button>
+          </form>
         ) : (
           /* OTP step */
           <form onSubmit={handleOtpSubmit} noValidate className="p-5 space-y-4">
-            <ErrorBanner message={serverError} />
+            {flags.isError && <ErrorBanner message={errorMessage ?? "Invalid code"} />}
 
             <p className="text-content-primary" style={{ fontSize: "var(--font-size-14)", fontWeight: "var(--font-weight-medium)" }}>
               Verification code
@@ -160,37 +142,38 @@ export default function LoginPage() {
             <div className="space-y-1.5">
               <label className="sr-only">Verification code</label>
               <OtpInput
-                value={otp}
-                hasError={!!errors.otp}
-                onChange={(val) => {
-                  setOtp(val)
-                  if (errors.otp) setErrors({})
-                  if (serverError) setServerError("")
-                }}
+                value={code}
+                hasError={flags.isError}
+                onChange={setCode}
               />
-              {errors.otp && (
-                <p className="text-loss" role="alert" style={{ fontSize: "var(--font-size-12)", fontWeight: "var(--font-weight-medium)" }}>
-                  {errors.otp}
-                </p>
-              )}
             </div>
 
             <button
-              type="submit" disabled={loading || otp.length < 6}
+              type="submit" disabled={loading || code.length < 6}
               className="w-full h-10 rounded-[var(--radius-md)] flex items-center justify-center gap-2 bg-action-primary text-content-inverse hover:bg-action-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ fontSize: "var(--font-size-14)", fontWeight: "var(--font-weight-medium)" }}
             >
               {loading ? <><Spinner /> Verifying…</> : <>Verify code <ArrowRight className="w-4 h-4" /></>}
             </button>
 
-            <button
-              type="button"
-              onClick={() => { setStep("email"); setOtp(""); setErrors({}); setServerError("") }}
-              className="w-full flex items-center justify-center gap-1.5 text-content-muted hover:text-content-primary transition-colors"
-              style={{ fontSize: "var(--font-size-14)" }}
-            >
-              <ArrowLeft className="w-3.5 h-3.5" /> Use a different email
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => resend()}
+                className="flex-1 flex items-center justify-center text-content-muted hover:text-content-primary transition-colors"
+                style={{ fontSize: "var(--font-size-14)" }}
+              >
+                Resend code
+              </button>
+              <button
+                type="button"
+                onClick={() => { /* reset handled by Hawcx SDK on new submitEmail */ setEmail("") }}
+                className="flex-1 flex items-center justify-center gap-1.5 text-content-muted hover:text-content-primary transition-colors"
+                style={{ fontSize: "var(--font-size-14)" }}
+              >
+                <ArrowLeft className="w-3.5 h-3.5" /> Different email
+              </button>
+            </div>
           </form>
         )}
       </div>
@@ -219,8 +202,8 @@ function ErrorBanner({ message }: { message: string }) {
   )
 }
 
-function FormField({ label, htmlFor, error, children }: {
-  label: string; htmlFor: string; error?: string; children: React.ReactNode
+function FormField({ label, htmlFor, children }: {
+  label: string; htmlFor: string; children: React.ReactNode
 }) {
   return (
     <div className="space-y-1.5">
@@ -228,11 +211,6 @@ function FormField({ label, htmlFor, error, children }: {
         {label}
       </label>
       {children}
-      {error && (
-        <p className="text-loss" role="alert" style={{ fontSize: "var(--font-size-12)", fontWeight: "var(--font-weight-medium)" }}>
-          {error}
-        </p>
-      )}
     </div>
   )
 }
@@ -246,19 +224,5 @@ function Spinner() {
   )
 }
 
-function GoogleIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-    </svg>
-  )
-}
-
 const inputBase =
   "w-full h-10 rounded-[var(--radius-md)] px-4 bg-surface-base border border-border-default text-content-primary placeholder:text-content-disabled outline-none focus:border-border-accent focus-visible:ring-2 focus-visible:ring-action-primary/20 transition-colors"
-
-const inputErrorCls =
-  "border-loss/60 focus:border-loss focus-visible:ring-loss/20"
