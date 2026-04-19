@@ -18,7 +18,21 @@ export const sessionOptions = {
   },
 }
 
+export const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export async function getSession(): Promise<IronSession<SessionData>> {
   const cookieStore = await cookies()
-  return getIronSession<SessionData>(cookieStore, sessionOptions)
+  const session = await getIronSession<SessionData>(cookieStore, sessionOptions)
+  // Self-heal stale cookies from a prior deploy that stored the Hawcx `sub`
+  // (base64 of email) in userId instead of the profile UUID. Without this,
+  // every downstream query .eq("id", session.userId) fails with Postgres 22P02.
+  // We mask the fields in memory only — destroy() would write a cookie, which
+  // isn't allowed during RSC rendering. The stale cookie is overwritten the
+  // next time /api/auth/session runs (login) or /api/auth/logout is called.
+  if (session.userId && !UUID_RE.test(session.userId)) {
+    session.userId = ""
+    session.email = ""
+  }
+  return session
 }

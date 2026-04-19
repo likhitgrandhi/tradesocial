@@ -1,26 +1,34 @@
-import { HardHat } from "lucide-react"
+import { LogTradeForm } from "@/components/log-trade/log-trade-form"
+import { isValidSymbol, normalizeSymbol } from "@/lib/market/symbols"
 
-export default function LogTradePage() {
-  return <ComingSoon title="Log Trade" description="Record your trade, add a thesis, and share it with your followers." />
+export const metadata = {
+  title: "Log Trade — TradeSocial",
 }
 
-function ComingSoon({ title, description }: { title: string; description: string }) {
+export default async function LogTradePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ symbol?: string | string[] }>
+}) {
+  const params = await searchParams
+  const raw = Array.isArray(params.symbol) ? params.symbol[0] : params.symbol
+  const normalized = raw ? normalizeSymbol(raw) : ""
+  const symbol = normalized && isValidSymbol(normalized) ? normalized : ""
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4">
-      <div className="w-12 h-12 rounded-[var(--radius-xl)] bg-surface-raised border border-border-default flex items-center justify-center">
-        <HardHat className="w-5 h-5 text-content-muted" />
-      </div>
-      <div className="space-y-1">
-        <h1 className="text-content-primary" style={{ fontSize: "var(--font-size-20)", fontWeight: "var(--font-weight-medium)" }}>
-          {title}
+    <div className="space-y-6">
+      <header className="space-y-1">
+        <h1
+          className="text-content-primary"
+          style={{ fontSize: "var(--font-size-24)", fontWeight: "var(--font-weight-semibold)" }}
+        >
+          Log a trade
         </h1>
         <p className="text-content-muted" style={{ fontSize: "var(--font-size-14)" }}>
-          {description}
+          Record an open position. It will appear in your Active Trades with live PnL.
         </p>
-        <p className="text-content-disabled" style={{ fontSize: "var(--font-size-13)" }}>
-          Being built
-        </p>
-      </div>
+      </header>
+      <LogTradeForm initialSymbol={symbol} />
     </div>
   )
 }

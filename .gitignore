@@ -31,6 +31,9 @@ pnpm-debug.log*
 # env files
 .env*.local
 
+# supabase CLI temp
+supabase/.temp/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
