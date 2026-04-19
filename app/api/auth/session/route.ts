@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { HawcxOAuth, TokenExchangeError, TokenVerificationError } from "@hawcx/oauth-client"
-import { getSession } from "@/lib/session"
+import { getSession, UUID_RE } from "@/lib/session"
 import { createServiceClient } from "@/lib/supabase/service"
 
 // HawcxOAuth uses its own base URL (https://api.hawcx.com) for /oauth2/token —
@@ -32,13 +32,15 @@ let claims: { sub?: string; email?: string }
   const hawcxUserId = claims.sub ?? authCode
   const email = claims.email ?? ""
 
-  // Upsert profile in Supabase
-  let userId: string | undefined
+  // Upsert profile in Supabase — the returned profile.id is the UUID we use
+  // as session.userId everywhere else (trades.user_id FK, etc.). We must not
+  // fall back to a non-UUID value here: downstream writes will fail.
+  let userId: string
   let isNewUser = false
 
   try {
     const supabase = createServiceClient()
-    const { data: profile } = await supabase
+    const { data: profile, error } = await supabase
       .from("profiles")
       .upsert(
         { hawcx_user_id: hawcxUserId, email },
@@ -47,16 +49,21 @@ let claims: { sub?: string; email?: string }
       .select("id, onboarding_completed")
       .single()
 
-    if (profile) {
-      userId = profile.id
-      isNewUser = profile.onboarding_completed === false
+    if (error || !profile) {
+      console.error("[auth/session] Profile upsert failed:", error)
+      return NextResponse.json({ error: "Profile provisioning failed" }, { status: 500 })
     }
-  } catch (err) {
-    console.error("Profile upsert failed:", err)
-  }
 
-  if (!userId) {
-    userId = Buffer.from(hawcxUserId).toString("base64url")
+    if (!UUID_RE.test(profile.id)) {
+      console.error("[auth/session] Profile upsert returned non-UUID id:", profile.id)
+      return NextResponse.json({ error: "Profile provisioning failed" }, { status: 500 })
+    }
+
+    userId = profile.id
+    isNewUser = profile.onboarding_completed === false
+  } catch (err) {
+    console.error("[auth/session] Profile upsert threw:", err)
+    return NextResponse.json({ error: "Profile provisioning failed" }, { status: 500 })
   }
 
   const session = await getSession()

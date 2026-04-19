@@ -2,16 +2,16 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Search, TrendingUp, Bell, User } from "lucide-react"
+import { Home, LineChart, LayoutDashboard, TrendingUp, Compass } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
 const TABS = [
   { href: "/feed", icon: Home, label: "Feed" },
-  { href: "/explore", icon: Search, label: "Explore" },
+  { href: "/markets", icon: LineChart, label: "Markets" },
   { href: "/log-trade", icon: TrendingUp, label: "Log Trade", isAction: true },
-  { href: "/notifications", icon: Bell, label: "Alerts" },
-  { href: "/profile", icon: User, label: "Profile" },
+  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/explore", icon: Compass, label: "Explore" },
 ]
 
 export function MobileBottomNav() {

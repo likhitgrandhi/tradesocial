@@ -11,6 +11,7 @@ import {
   useAuthState,
   useAuthFlags,
   useAuthClient,
+  useAuthActions,
   useIdentifierForm,
   useOtpForm,
   isAuthStep,
@@ -23,6 +24,7 @@ export default function LoginPage() {
   const state = useAuthState()
   const flags = useAuthFlags()
   const client = useAuthClient()
+  const { reset: resetAuth } = useAuthActions()
 
   const {
     identifier: email,
@@ -167,7 +169,7 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
-                onClick={() => { /* reset handled by Hawcx SDK on new submitEmail */ setEmail("") }}
+                onClick={() => { resetAuth(); setEmail(""); sessionStorage.removeItem("hawcx_pending_email") }}
                 className="flex-1 flex items-center justify-center gap-1.5 text-content-muted hover:text-content-primary transition-colors"
                 style={{ fontSize: "var(--font-size-14)" }}
               >

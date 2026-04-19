@@ -8,15 +8,23 @@ import { Bell, Search, TrendingUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { NavLogo } from "./nav-logo"
 import { useAuth } from "@/hooks/use-auth"
+import { useProfile, clearProfileCache } from "@/hooks/use-profile"
 import { useSession } from "@hawcx/react"
 
 const NAV_LINKS = [
   { href: "/feed", label: "Feed" },
+  { href: "/markets", label: "Markets" },
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/explore", label: "Explore" },
-  { href: "/leaderboard", label: "Leaderboard" },
 ]
 
-function getEmailInitials(email: string | undefined): string {
+function getInitials(source: string | null | undefined, email: string | undefined): string {
+  const s = source?.trim()
+  if (s) {
+    const parts = s.split(/\s+/)
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+    return s.slice(0, 2).toUpperCase()
+  }
   if (!email) return "??"
   return email.split("@")[0].slice(0, 2).toUpperCase()
 }
@@ -24,6 +32,7 @@ function getEmailInitials(email: string | undefined): string {
 export function FloatingNav() {
   const pathname = usePathname()
   const { email, logout } = useAuth()
+  const { profile } = useProfile()
   const { actions: hawcxActions } = useSession()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const desktopDropdownRef = useRef<HTMLDivElement>(null)
@@ -46,10 +55,13 @@ export function FloatingNav() {
     setDropdownOpen(false)
     hawcxActions.signOut()
     sessionStorage.removeItem("hawcx_pending_email")
+    clearProfileCache()
     await logout()
   }
 
-  const initials = getEmailInitials(email)
+  const initials = getInitials(profile?.display_name ?? profile?.username ?? null, email)
+  const avatarUrl = profile?.avatar_url ?? null
+  const profileHref = profile?.username ? `/u/${profile.username}` : null
 
   return (
     <>
@@ -110,23 +122,39 @@ export function FloatingNav() {
             <div className="relative" ref={desktopDropdownRef}>
               <button
                 onClick={() => setDropdownOpen((o) => !o)}
-                className="w-8 h-8 rounded-full bg-surface-accent-subtle flex items-center justify-center text-action-primary text-[11px] cursor-pointer transition-colors hover:bg-surface-accent"
+                className="w-8 h-8 rounded-full bg-surface-accent-subtle flex items-center justify-center text-action-primary text-[11px] cursor-pointer transition-colors hover:bg-surface-accent overflow-hidden"
                 style={{ fontWeight: "var(--font-weight-bold)" }}
                 aria-label="User menu"
                 aria-expanded={dropdownOpen}
               >
-                {initials}
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  initials
+                )}
               </button>
 
               {dropdownOpen && (
                 <div className="absolute right-0 top-10 w-44 rounded-[var(--radius-md)] bg-surface-raised border border-border-default shadow-lg py-1 z-50">
-                  <button
-                    className="w-full px-4 py-2 text-left text-content-disabled cursor-not-allowed"
-                    style={{ fontSize: "var(--font-size-14)" }}
-                    disabled
-                  >
-                    Profile
-                  </button>
+                  {profileHref ? (
+                    <Link
+                      href={profileHref}
+                      onClick={() => setDropdownOpen(false)}
+                      className="block w-full px-4 py-2 text-left text-content-primary hover:bg-surface-muted transition-colors"
+                      style={{ fontSize: "var(--font-size-14)" }}
+                    >
+                      Profile
+                    </Link>
+                  ) : (
+                    <button
+                      className="w-full px-4 py-2 text-left text-content-disabled cursor-not-allowed"
+                      style={{ fontSize: "var(--font-size-14)" }}
+                      disabled
+                    >
+                      Profile
+                    </button>
+                  )}
                   <div className="h-px bg-border-default mx-2 my-1" />
                   <button
                     onClick={handleLogout}
@@ -163,23 +191,39 @@ export function FloatingNav() {
           <div className="relative ml-1" ref={mobileDropdownRef}>
             <button
               onClick={() => setDropdownOpen((o) => !o)}
-              className="w-8 h-8 rounded-full bg-action-primary flex items-center justify-center text-content-inverse text-[10px] cursor-pointer"
+              className="w-8 h-8 rounded-full bg-action-primary flex items-center justify-center text-content-inverse text-[10px] cursor-pointer overflow-hidden"
               style={{ fontWeight: "var(--font-weight-bold)" }}
               aria-label="User menu"
               aria-expanded={dropdownOpen}
             >
-              {initials}
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                initials
+              )}
             </button>
 
             {dropdownOpen && (
               <div className="absolute right-0 top-10 w-44 rounded-[var(--radius-md)] bg-surface-raised border border-border-default shadow-lg py-1 z-50">
-                <button
-                  className="w-full px-4 py-2 text-left text-content-disabled cursor-not-allowed"
-                  style={{ fontSize: "var(--font-size-14)" }}
-                  disabled
-                >
-                  Profile
-                </button>
+                {profileHref ? (
+                  <Link
+                    href={profileHref}
+                    onClick={() => setDropdownOpen(false)}
+                    className="block w-full px-4 py-2 text-left text-content-primary hover:bg-surface-muted transition-colors"
+                    style={{ fontSize: "var(--font-size-14)" }}
+                  >
+                    Profile
+                  </Link>
+                ) : (
+                  <button
+                    className="w-full px-4 py-2 text-left text-content-disabled cursor-not-allowed"
+                    style={{ fontSize: "var(--font-size-14)" }}
+                    disabled
+                  >
+                    Profile
+                  </button>
+                )}
                 <div className="h-px bg-border-default mx-2 my-1" />
                 <button
                   onClick={handleLogout}

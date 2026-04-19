@@ -256,6 +256,19 @@
   --radius-4xl:  var(--radius-xl);
 }
 
+/* ─── TradingView widget overrides ──────────────────────────────────────── */
+/* Strip the white backgrounds TradingView injects so our surface tokens show through */
+.tradingview-widget-container,
+.tradingview-widget-copyright {
+  background-color: transparent !important;
+}
+.tradingview-widget-copyright a {
+  color: var(--content-accent) !important;
+}
+.tradingview-widget-copyright span.blue-text {
+  color: var(--content-accent) !important;
+}
+
 /* ─── Base layer ─────────────────────────────────────────────────────────── */
 @layer base {
   * {
